@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs" xmlns:cxf="http://cxf.apache.org/core"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:batch="http://www.springframework.org/schema/batch" 
+	xsi:schemaLocation="
+                        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                       	http://www.springframework.org/schema/aop
+						http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+                        http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+                        http://www.springframework.org/schema/tx
+						http://www.springframework.org/schema/tx/spring-tx-3.0.xsd 
+						http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+                        http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd">
+
+
+
+
+	<aop:config proxy-target-class="true" />
+	<context:annotation-config />
+	<context:component-scan base-package="com.draftking" />
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<import resource="classpath:META-INF/cxf/cxf.xml" />
+	
+	<!-- Job Repository : used to persist state of batch jobs.  We are using MapJobRepositoryFactoryBean because it does not persist meta data about job into the datbase
+	it stores the information in memory Maps
+	 -->
+	<bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+	<property name = "transactionManager" ref="transactionManager"/>
+	    <property name="isolationLevelForCreate" value="ISOLATION_DEFAULT"/>
+	</bean>
+
+<!--  JOb Launcher: creates the job and the job state before launching it -->
+	<bean id ="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+	<property name="jobRepository" ref="jobRepository"/>
+	</bean>
+	
+	
+	<bean id="draftking_file_reader" class="org.springframework.batch.item.file.FlatFileItemReader"
+		scope="step">
+		<!-- <property name="resource" value="file:./sample.csv" /> -->
+		<!-- property name="resource" value="file:///Users/BenPoon/DRAFTKING_CSV/draftking.csv" /-->
+			<property name="strict" value="false" />
+		<property name="resource" value="file:c:\Users\BenPoon\DRAFTKING_CSV\draftking.csv" />
+		
+
+		<property name="linesToSkip" value="1" />
+
+		<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+
+				<property name="lineTokenizer">
+					<bean
+						class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+						<property name="names"
+							value="position,name,salary,gameInfo,avgPointsPerGame,teamAbrev" />
+							<property name="delimiter" value =","/>
+					</bean>
+				</property>
+
+				<property name="fieldSetMapper" ref ="draftkingPlayersFieldSetMapper"/>
+				
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="playersTableItemWriter" class="com.draftking.springbatch.itemWriter.PlayersTableItemWriter">
+	</bean>
+	
+		<batch:job id="draftKingCSVJob">
+	  <batch:step id="step1">
+		<batch:tasklet>
+			<batch:chunk reader="draftking_file_reader" writer="playersTableItemWriter" commit-interval="10">
+			</batch:chunk>
+		</batch:tasklet>
+	  </batch:step>
+	</batch:job>
+	
+	
+	
+	<bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@localhost:1521/xe" />
+		<property name="username" value="ben_user" />
+		<property name="password" value="admin3" />
+		<property name="initialSize" value="10" />
+		<property name="maxActive" value="30" />
+	</bean>
+
+	<!-- <bean id="myDataSource" class="oracle.jdbc.pool.OracleDataSource" destroy-method="close"> 
+		<property name="URL" value="jdbc:oracle:thin:@localhost:1521:xe"/> <property 
+		name="user" value="ben_user_da"/> <property name="password" value="admin"/> 
+		</bean> </bean -->
+	<!-- bean id="atomikosTransactionManager" class="com.atomikos.icatch.jta.UserTransactionManager" 
+		init-method="init" destroy-method="close"> <property name="forceShutdown" 
+		value="true" /> <property name="startupTransactionService" value="true" /> 
+		</bean -->
+
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="persistenceUnitName" value="restProjectPU" />
+		<property name="dataSource" ref="myDataSource" />
+
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.query.factory_class">org.hibernate.hql.classic.ClassicQueryTranslatorFactory
+				</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<!-- to enable the thread bound strategy in hibernate -->
+				<!-- JDBCTransactionFactory is ok for single db connection -->
+				<!-- can also be set to JTATransactionFactory..In a system with multiple 
+					databases, it may be a program that will call the data in several databases, 
+					need a distributed transaction, or ready to use JTA to manage the inter-Session 
+					long transaction, then you need to use JTA transaction -->
+
+
+				<prop key="hibernate.transaction.factory_class">org.hibernate.transaction.JDBCTransactionFactory
+				</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.NoCacheProvider</prop>
+				<prop key="hibernate.hbm2ddl.auto">validate
+				</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.use_sql_comments">true</prop>
+			</props>
+		</property>
+
+	</bean>
+
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="myDataSource" />
+
+		<property name="packagesToScan" value="**.*" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.query.factory_class">org.hibernate.hql.classic.ClassicQueryTranslatorFactory
+				</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<!-- to enable the thread bound strategy in hibernate -->
+				<!-- JDBCTransactionFactory is ok for single db connection -->
+				<!-- can also be set to JTATransactionFactory..In a system with multiple 
+					databases, it may be a program that will call the data in several databases, 
+					need a distributed transaction, or ready to use JTA to manage the inter-Session 
+					long transaction, then you need to use JTA transaction -->
+
+
+				<prop key="hibernate.transaction.factory_class">org.hibernate.transaction.JDBCTransactionFactory
+				</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.NoCacheProvider</prop>
+				<prop key="hibernate.hbm2ddl.auto">validate
+				</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.use_sql_comments">true</prop>
+			</props>
+		</property>
+	</bean>
+
+
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
+
+
+	<!-- hibernate transaction manager= local non xa transaction. For one jvm 
+		one resource in one logical transaction unit. If we want mulitple objects 
+		across multiple JVMS in one transaction as one logical unit then -->
+	<!-- we need to use a JTATransactionManager such as atomikos for global 
+		transaction -->
+	<!-- <bean id="transactionManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager"> 
+		<property name="sessionFactory" ref="sessionFactory" /> </bean> -->
+
+	<bean id="daoProxyFactory" class="com.draftking.dao.DAOProxyFactory"
+		destroy-method="cleanup">
+	</bean>
+
+		<!-- PlayersTable DAO -->
+	<bean id="playersTableDAO" factory-bean="daoProxyFactory"
+		factory-method="newInstance" scope="prototype">
+		<constructor-arg type="java.lang.Class"
+			value="com.draftking.dao.PlayersTableDAO"></constructor-arg>
+		<constructor-arg type="java.lang.Class"
+			value="com.draftking.domain.PlayersTable"></constructor-arg>
+	</bean>
+
+	<!-- homeStatsAllYears DAO -->
+	<bean id="homeStatsAllYearsDAO" factory-bean="daoProxyFactory"
+		factory-method="newInstance" scope="prototype">
+		<constructor-arg type="java.lang.Class"
+			value="com.draftking.dao.HomeStatsAllYearsDAO"></constructor-arg>
+		<constructor-arg type="java.lang.Class"
+			value="com.draftking.domain.HomeStatsAllYears"></constructor-arg>
+	</bean>
+
+
+	<bean id="PlayerHomeStatsResource" class="com.draftking.resource.PlayerHomeStatsResourceImpl">
+	</bean>
+
+	<jaxrs:server id="exampleCxfServer" address="/">
+		<jaxrs:serviceBeans>
+			<ref bean="playerHomeStatsResource" />
+
+		</jaxrs:serviceBeans>
+		<jaxrs:extensionMappings>
+			<entry key="json" value="application/json" />
+		</jaxrs:extensionMappings>
+		<jaxrs:features>
+			<cxf:logging />
+		</jaxrs:features>
+		<jaxrs:providers>
+			<bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
+		</jaxrs:providers>
+	</jaxrs:server>
+
+
+</beans>

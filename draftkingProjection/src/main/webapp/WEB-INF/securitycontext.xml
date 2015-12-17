@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:beans="http://www.springframework.org/schema/beans"
+	xsi:schemaLocation="
+      http://www.springframework.org/schema/security 
+      http://www.springframework.org/schema/security/spring-security-3.2.xsd
+      http://www.springframework.org/schema/beans 
+      http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
+
+	<security:http auto-config="true">
+		<security:intercept-url pattern="/services/**"
+			access="ROLE_USER" />
+		<security:form-login always-use-default-target="true"
+			default-target-url="/pages/welcome"
+			authentication-success-handler-ref="RestAuthenticationSuccessHandler" />
+	</security:http>
+
+
+
+	<security:authentication-manager>
+		<security:authentication-provider>
+			<!-- password-encoder hash="sha"/ -->
+			<security:jdbc-user-service
+				data-source-ref="myDataSource"
+				users-by-username-query="select username,password, 1 as enabled from users where username=?"
+				authorities-by-username-query="select u.username, ur.role from users u, user_roles ur where u.username = ur.username and u.username=?" />
+
+
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+
+
+
+</beans:beans>
+  
