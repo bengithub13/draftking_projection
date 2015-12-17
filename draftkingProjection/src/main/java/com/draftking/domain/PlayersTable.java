@@ -37,8 +37,8 @@ public class PlayersTable extends AbstractDomain {
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (!super.equals(obj))
-			return false;
+//		if (!super.equals(obj))
+//			return false;
 		if (!(obj instanceof PlayersTable))
 			return false;
 		PlayersTable other = (PlayersTable) obj;
