@@ -13,6 +13,7 @@
 		<security:form-login always-use-default-target="true"
 			default-target-url="/pages/welcome"
 			authentication-success-handler-ref="RestAuthenticationSuccessHandler" />
+			<security:custom-filter ref="corsFilter" before="HEADERS_FILTER"/>
 	</security:http>
 
 

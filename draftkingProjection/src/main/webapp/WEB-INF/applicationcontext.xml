@@ -27,6 +27,8 @@
 	<!-- Job Repository : used to persist state of batch jobs.  We are using MapJobRepositoryFactoryBean because it does not persist meta data about job into the datbase
 	it stores the information in memory Maps
 	 -->
+	 <bean id="corsFilter" class="com.draftking.security.CorsFilter" />
+	 
 	<bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
 	<property name = "transactionManager" ref="transactionManager"/>
 	    <property name="isolationLevelForCreate" value="ISOLATION_DEFAULT"/>

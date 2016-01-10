@@ -80,6 +80,7 @@ public class HttpCLientTest {
 	public void test() {
 		String url = "http://100.12.28.216:8181/draftking/j_spring_security_check";
 		HashMap<String, String> authenticationMap = new HashMap<String, String>();
+		//the j_username and j_password are form data.  contenttype =application/
 		authenticationMap.put("j_username", "benpoon");
 		authenticationMap.put("j_password", "pass1");
 		http_execute(url, authenticationMap, null, Http_Mode.POST);
